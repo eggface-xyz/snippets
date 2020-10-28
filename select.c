@@ -11,6 +11,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "sock_util.h"
+
 using std::map;
 
 struct client {
@@ -22,44 +24,6 @@ map<int, client> clients;
 
 #define BUF_SIZE 1024
 
-int setup_listening_socket(int port) {
-  int res;
-  int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (listen_fd < 0) {
-    printf("socket() error: %s\n", strerror(errno));
-    return errno;
-  }
-
-  int on = 1;
-  res =
-      setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
-  if (res < 0) {
-    printf("setsockopt() error: %s\n", strerror(errno));
-    goto fail;
-  }
-
-  struct sockaddr_in addr;
-  addr.sin_family = AF_INET;
-  addr.sin_port = port;
-  addr.sin_addr.s_addr = INADDR_ANY;
-  res = bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr));
-  if (res < 0) {
-    printf("bind() error: %s\n", strerror(errno));
-    goto fail;
-  }
-
-  res = listen(listen_fd, 5); // backlog
-  if (res < 0) {
-    printf("listen() error: %s\n", strerror(errno));
-    goto fail;
-  }
-
-  return listen_fd;
-
-fail:
-  close(listen_fd);
-  return -1;
-}
 
 int startserver(int port) {
   int res;
@@ -121,6 +85,11 @@ int startserver(int port) {
             printf("recv data from %s\n", inet_ntoa(clients[i].addr.sin_addr));
             for (int k = 0; k < n; k++)
               printf("0x%x, ", buffer[k]);
+						puts("");
+						if((n = write(i, buffer, n)) < 0) {
+							printf("write error %s\n", strerror(errno));
+							goto fail;
+						}
           }
         }
       }

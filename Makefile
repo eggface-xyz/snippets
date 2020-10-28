@@ -1,11 +1,14 @@
-SRC = select.c
-PROG = select
+SRC_UTIL  = sock_util.c
+SRC_SELECT = select.c $(SRC_UTIL)
+OBJ_SELECT = $(patsubst %.c, %.o, $(SRC_SELECT))
+
+PROG_SELECT = select
 CC = g++
 
-$(PROG): $(SRC)
+$(PROG_SELECT): $(OBJ_SELECT)
 	$(CC) -o $@ $^
 
 .PHONY: clean
 
 clean:
-	$(RM) $(PROG)
+	$(RM) $(PROG_SELECT) $(OBJ_SELECT)
