@@ -77,6 +77,7 @@ int startserver(int port) {
   printf("server started...\n");
   while (true) {
     fd_set readfds;
+    FD_ZERO(&readfds); // it's very important to zero fdset before every iteration
     int maxfd = listen_fd;
     FD_SET(listen_fd, &readfds);
     for(auto e : clients) {
@@ -91,10 +92,10 @@ int startserver(int port) {
     }
     if (FD_ISSET(listen_fd, &readfds)) {
         struct sockaddr_in client_addr;
-        socklen_t len;
+        socklen_t len = sizeof(client_addr);
         int client_fd =
-            //accept(listen_fd, (struct sockaddr *)&client_addr, &len);
-            accept(listen_fd, NULL, NULL);
+            accept(listen_fd, (struct sockaddr *)&client_addr, &len);
+            //accept(listen_fd, NULL, NULL);
         if (client_fd < 0) {
           printf("accept error: %s\n", strerror(errno));
           goto fail;
@@ -117,9 +118,11 @@ int startserver(int port) {
         else {
           if (!n) {
             close(i);
-            printf("disconnection from %s, current connections: %d\n",
-                   inet_ntoa(clients[i].addr.sin_addr), clients.size());
+            printf("disconnection from %s on fd %d, current connections: %d\n",
+                   inet_ntoa(clients[i].addr.sin_addr), i, clients.size());
             clients.erase(i);
+	    for(auto e : clients)
+	      printf("\tclient fd %d\n", e.first);
           } else {
             printf("recv data from %s\n", inet_ntoa(clients[i].addr.sin_addr));
             for (int k = 0; k < n; k++)
